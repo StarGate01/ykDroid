@@ -26,7 +26,8 @@ public class NfcYubiKey implements YubiKey {
 	/**
 	 * ISO 7816 Application ID for the challenge-response feature of YubiKeys.
 	 */
-	private static final byte[] CHALLENGE_AID           = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01};
+	private static final byte[] CHALLENGE_AID_YUBIKEY   = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01};
+	private static final byte[] CHALLENGE_AID_FIDESMO   = new byte[]{(byte) 0xA0, 0x00, 0x00, 0x06, 0x17, 0x00, 0x07, 0x53, 0x4E, (byte) 0xAF, 0x01};
 
 	/**
 	 * Should only be instantiated by the {@link net.pp3345.ykdroid.ConnectionManager}.
@@ -51,9 +52,12 @@ public class NfcYubiKey implements YubiKey {
 		try {
 			this.ensureConnected();
 
-			final SelectFileApdu selectFileApdu = new SelectFileApdu(SelectFileApdu.SelectionControl.DF_NAME_DIRECT, SelectFileApdu.RecordOffset.FIRST_RECORD, CHALLENGE_AID);
+			SelectFileApdu selectFileApdu = new SelectFileApdu(SelectFileApdu.SelectionControl.DF_NAME_DIRECT, SelectFileApdu.RecordOffset.FIRST_RECORD, CHALLENGE_AID_YUBIKEY);
 			if (!selectFileApdu.parseResponse(this.tag.transceive(selectFileApdu.build())).isSuccess()) {
-				throw new FailedOperationException();
+				selectFileApdu = new SelectFileApdu(SelectFileApdu.SelectionControl.DF_NAME_DIRECT, SelectFileApdu.RecordOffset.FIRST_RECORD, CHALLENGE_AID_FIDESMO);
+				if (!selectFileApdu.parseResponse(this.tag.transceive(selectFileApdu.build())).isSuccess()) {
+					throw new FailedOperationException();
+				}
 			}
 
 			final PutApdu         putApdu         = new PutApdu(slot, challenge);
